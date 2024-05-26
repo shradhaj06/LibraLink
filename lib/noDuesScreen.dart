@@ -69,7 +69,7 @@ class _MyAppState extends State<noDues> {
                 style: OutlinedButton.styleFrom(
                     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     textStyle: TextStyle(fontSize: 28),
-                    primary: Colors.black,
+                    backgroundColor: Colors.black,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     )),

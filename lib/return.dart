@@ -217,7 +217,7 @@ class _ReIssueContentState extends State<ReIssueContent> {
                                           setState(() {});
                                         },
                                         style: ElevatedButton.styleFrom(
-                                          primary: Colors.black,
+                                          backgroundColor: Colors.black,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8.0),
@@ -238,7 +238,7 @@ class _ReIssueContentState extends State<ReIssueContent> {
                                           setState(() {});
                                         },
                                         style: ElevatedButton.styleFrom(
-                                          primary: Colors.black,
+                                          backgroundColor: Colors.black,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8.0),

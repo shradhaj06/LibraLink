@@ -5,11 +5,14 @@ import 'dart:io';
 import 'package:libralink/routes/mapping.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-class ProfilePage extends StatefulWidget{
+
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
+
 class _ProfilePageState extends State<ProfilePage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController fullNameController = TextEditingController();
@@ -19,8 +22,17 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController idCardController = TextEditingController();
   String idCardImageUrl = '';
-  String profilepicUrl='';
-  bool editMode=false;
+  String profilePicUrl = '';
+  bool editMode = false;
+  File? _image;
+  File? idCardImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
   Future<void> _signOut() async {
     try {
       await _auth.signOut();
@@ -30,48 +42,42 @@ class _ProfilePageState extends State<ProfilePage> {
       print("Error during sign-out: $e");
     }
   }
-  File? _image;
-  @override
-  void initState(){
-    super.initState();
-    _loadUserData();
-  }
-  File? idCardImage;
-  Future<void> _loadUserData() async{
-    try{
-      User? user = _auth.currentUser;
-      if(user!=null){
-        DocumentSnapshot userData = await FirebaseFirestore.instance.collection('user').doc(user.uid).get();
-        if(userData.exists){
-          setState(() {
-            fullNameController.text=userData['name']??'';
-            usernameController.text=userData['username']??'';
-            contactNumberController.text=userData['contact']??'';
-            emailAddressController.text=userData['email']??'';
-            idCardImageUrl=userData['Id']??'';
-            profilepicUrl=userData['Profile']??'';
 
+  Future<void> _loadUserData() async {
+    try {
+      User? user = _auth.currentUser;
+      if (user != null) {
+        DocumentSnapshot userData =
+            await FirebaseFirestore.instance.collection('user').doc(user.uid).get();
+        if (userData.exists) {
+          setState(() {
+            fullNameController.text = userData['name'] ?? '';
+            usernameController.text = userData['username'] ?? '';
+            contactNumberController.text = userData['contact'] ?? '';
+            emailAddressController.text = userData['email'] ?? '';
+            idCardImageUrl = userData['Id'] ?? '';
+            profilePicUrl = userData['Profile'] ?? '';
           });
         }
       }
-    }catch(e){
-      print('error');
+    } catch (e) {
+      print('Error loading user data: $e');
     }
   }
+
   Future<void> saveUserData() async {
     try {
-      User? user= FirebaseAuth.instance.currentUser;
+      User? user = FirebaseAuth.instance.currentUser;
       await FirebaseFirestore.instance.collection('user').doc(user?.uid).set({
         'name': fullNameController.text,
         'username': usernameController.text,
         'contact': contactNumberController.text,
         'email': emailAddressController.text,
-        //'password': passwordController.text,
         'Id': idCardImageUrl,
         'uid': user?.uid,
-        'Profile':profilepicUrl,
-
+        'Profile': profilePicUrl,
       });
+      print('User data saved successfully');
     } catch (e) {
       print('Error saving data: $e');
     }
@@ -87,88 +93,66 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: Icon(Icons.photo_library),
               title: Text('Gallery'),
               onTap: () async {
-        Navigator.pop(context);
-        final image =
-        await imagePicker.pickImage(source: ImageSource.gallery);
-        if (image != null) {
-        try {
-        final Reference storageReference = FirebaseStorage.instance
-            .ref()
-            .child('profile_images')
-            .child('${FirebaseAuth.instance.currentUser?.uid}.jpg');
-
-        final UploadTask uploadTask = storageReference.putFile(
-        File(image.path));
-        final TaskSnapshot taskSnapshot = await uploadTask;
-
-        final String downloadURL = await taskSnapshot.ref.getDownloadURL();
-
-        setState(() {
-        idCardImage = File(image.path);
-        profilepicUrl = downloadURL;
-        });
-        } catch (e) {
-        print('Error uploading profile image: $e');
-        }
-        }
-        }
+                Navigator.pop(context);
+                final image = await imagePicker.pickImage(source: ImageSource.gallery);
+                if (image != null) {
+                  _uploadImage(File(image.path));
+                }
+              },
             ),
             ListTile(
               leading: Icon(Icons.photo_camera),
               title: Text('Camera'),
               onTap: () async {
-    Navigator.pop(context);
-    final image =
-    await imagePicker.pickImage(source: ImageSource.camera);
-    if (image != null) {
-    try {
-    final Reference storageReference = FirebaseStorage.instance
-        .ref()
-        .child('profile_images')
-        .child('${FirebaseAuth.instance.currentUser?.uid}.jpg');
-
-    final UploadTask uploadTask = storageReference.putFile(
-    File(image.path));
-    final TaskSnapshot taskSnapshot = await uploadTask;
-
-    final String downloadURL = await taskSnapshot.ref.getDownloadURL();
-
-    setState(() {
-    idCardImage = File(image.path);
-    profilepicUrl = downloadURL;
-    });
-    } catch (e) {
-    print('Error uploading profile image: $e');
-    }
-    }
-    }
-    ),
-                  ]);
+                Navigator.pop(context);
+                final image = await imagePicker.pickImage(source: ImageSource.camera);
+                if (image != null) {
+                  _uploadImage(File(image.path));
+                }
+              },
+            ),
+          ],
+        );
       },
     );
+  }
+
+  Future<void> _uploadImage(File image) async {
+    try {
+      final Reference storageReference = FirebaseStorage.instance
+          .ref()
+          .child('profile_images')
+          .child('${FirebaseAuth.instance.currentUser?.uid}.jpg');
+      final UploadTask uploadTask = storageReference.putFile(image);
+      final TaskSnapshot taskSnapshot = await uploadTask;
+      final String downloadURL = await taskSnapshot.ref.getDownloadURL();
+      setState(() {
+        _image = image;
+        profilePicUrl = downloadURL;
+      });
+      print('Profile image uploaded successfully');
+    } catch (e) {
+      print('Error uploading profile image: $e');
+    }
   }
 
   Future<void> _pickIdCardImage() async {
     final imagePicker = ImagePicker();
     final pickedFile = await imagePicker.pickImage(source: ImageSource.gallery);
-
     if (pickedFile != null) {
       try {
         final Reference storageReference = FirebaseStorage.instance
             .ref()
             .child('id_card_images')
             .child('${FirebaseAuth.instance.currentUser?.uid}.jpg');
-
-        final UploadTask uploadTask = storageReference.putFile(
-            File(pickedFile.path));
+        final UploadTask uploadTask = storageReference.putFile(File(pickedFile.path));
         final TaskSnapshot taskSnapshot = await uploadTask;
-
         final String downloadURL = await taskSnapshot.ref.getDownloadURL();
-
         setState(() {
           idCardImage = File(pickedFile.path);
           idCardImageUrl = downloadURL;
         });
+        print('ID card image uploaded successfully');
       } catch (e) {
         print('Error uploading ID card image: $e');
       }
@@ -177,18 +161,21 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(onPressed: (){
-            setState(() {
-              editMode=!editMode;
-            });
-          }, icon: Icon(
-            Icons.edit,color: Colors.black,
-          )),
+          IconButton(
+            onPressed: () {
+              setState(() {
+                editMode = !editMode;
+              });
+            },
+            icon: Icon(
+              Icons.edit,
+              color: Colors.black,
+            ),
+          ),
           IconButton(
             icon: Icon(
               Icons.logout,
@@ -223,7 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: <Widget>[
                   Center(
                     child: GestureDetector(
-                      onTap: editMode? _pickImage:null,
+                      onTap: editMode ? _pickImage : null,
                       child: Stack(
                         children: [
                           Container(
@@ -234,21 +221,19 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: ClipOval(
                               child: _image != null
-                                  ? AspectRatio(
-                                      aspectRatio: 1.0,
-                                      child: Image.file(
-                                        _image!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    )
-                              :(profilepicUrl.isNotEmpty)?Image.network(profilepicUrl,fit: BoxFit.cover,)
-                                  : Image.asset(
-                                      'assets/avatar.png',
+                                  ? Image.file(
+                                      _image!,
                                       fit: BoxFit.cover,
-                                    ),
+                                    )
+                                  : (profilePicUrl.isNotEmpty)
+                                      ? Image.network(profilePicUrl, fit: BoxFit.cover)
+                                      : Image.asset(
+                                          'assets/avatar.png',
+                                          fit: BoxFit.cover,
+                                        ),
                             ),
                           ),
-                          if (_image == null&&editMode)
+                          if (_image == null && editMode)
                             Positioned(
                               bottom: 5,
                               right: 5,
@@ -267,33 +252,28 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-
                   SizedBox(height: 20),
-                  // Full Name
                   TextField(
                     controller: fullNameController,
                     decoration: InputDecoration(labelText: 'Full Name'),
+                    enabled: editMode,
                   ),
                   SizedBox(height: 10),
-
-                  // Username
                   TextField(
                     controller: usernameController,
                     decoration: InputDecoration(labelText: 'Username'),
+                    enabled: editMode,
                   ),
                   SizedBox(height: 10),
-
-                  // Contact Number
                   TextField(
                     controller: contactNumberController,
                     decoration: InputDecoration(
                       labelText: 'Contact Number',
                       suffixIcon: Icon(Icons.phone),
                     ),
+                    enabled: editMode,
                   ),
                   SizedBox(height: 10),
-
-                  // Email Address
                   TextField(
                     controller: emailAddressController,
                     decoration: InputDecoration(
@@ -301,10 +281,9 @@ class _ProfilePageState extends State<ProfilePage> {
                       hintText: 'email.nitp.ac.in',
                       suffixIcon: Icon(Icons.email),
                     ),
+                    enabled: editMode,
                   ),
                   SizedBox(height: 10),
-
-                  // Password
                   TextField(
                     controller: passwordController,
                     decoration: InputDecoration(
@@ -312,20 +291,21 @@ class _ProfilePageState extends State<ProfilePage> {
                       suffixIcon: Icon(Icons.password_outlined),
                     ),
                     obscureText: true,
+                    enabled: editMode,
                   ),
                   SizedBox(height: 10),
-
                   TextField(
                     controller: idCardController,
                     decoration: InputDecoration(
                       labelText: 'ID Card',
                       suffixIcon: GestureDetector(
                         onTap: () {
-                          _pickIdCardImage();
+                          if (editMode) _pickIdCardImage();
                         },
                         child: Icon(Icons.add_a_photo),
                       ),
                     ),
+                    enabled: editMode,
                   ),
                   SizedBox(height: 20),
                   GestureDetector(
@@ -346,17 +326,15 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         if (idCardImage != null)
                           Container(
-                            width: 150,
-                            height: 100,
-                            child: Image.file(idCardImage!,fit:BoxFit.cover)
-                          )
-                        else if(idCardImageUrl.isNotEmpty)
-                         Container(
-                         width: 150,
-                         height: 100,
-    child:Image.network(idCardImageUrl,fit: BoxFit.cover,)
-                         )
-                            else
+                              width: 150,
+                              height: 100,
+                              child: Image.file(idCardImage!, fit: BoxFit.cover))
+                        else if (idCardImageUrl.isNotEmpty)
+                          Container(
+                              width: 150,
+                              height: 100,
+                              child: Image.network(idCardImageUrl, fit: BoxFit.cover))
+                        else
                           Text(
                             'Click on Icon to Upload ID',
                             style: TextStyle(fontSize: 15),
@@ -364,17 +342,14 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     ),
                   ),
-
                   SizedBox(height: 20),
                 ],
               ),
             ),
-
-            // Save Button
             ElevatedButton(
-              onPressed: editMode?saveUserData:null,
+              onPressed: editMode ? saveUserData : null,
               style: ElevatedButton.styleFrom(
-                primary: Colors.black,
+                backgroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10.0),
                 ),

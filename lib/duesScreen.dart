@@ -105,8 +105,8 @@ class _DuesScreenState extends State<DuesScreen> {
                           padding: EdgeInsets.symmetric(
                               horizontal: 10, vertical: 10),
                           textStyle: TextStyle(fontSize: 15),
-                          primary: Colors.blueGrey,
-                          onPrimary: Colors.black,
+                          backgroundColor: Colors.blueGrey,
+                          foregroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           )),
@@ -123,7 +123,7 @@ class _DuesScreenState extends State<DuesScreen> {
                           padding: EdgeInsets.symmetric(
                               horizontal: 10, vertical: 10),
                           textStyle: TextStyle(fontSize: 15),
-                          primary: Colors.black,
+                          backgroundColor: Colors.black,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                           )),
